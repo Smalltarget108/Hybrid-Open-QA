@@ -15,6 +15,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import loggers, seed_everything
 import pdb
+import json
 
 from utils_fusion_in_decoder import generate_dataloader
 
@@ -32,6 +33,18 @@ from transformers import (
 
 logging.basicConfig(level=logging.NOTSET)
 logger = logging.getLogger(__name__)
+
+
+NUM_GPU = os.environ['SM_NUM_GPUS']
+HOSTS = json.loads(os.environ['SM_HOSTS'])
+CURRENT_HOST = os.environ['SM_CURRENT_HOST']
+
+# setting up environment variable for pytorch lightning distributed training
+os.environ['MASTER_ADDR'] = HOSTS[0]
+os.environ['MASTER_PORT'] = str(6105)
+os.environ['WORLD_SIZE'] = str(len(HOSTS))
+os.environ['NODE_RANK'] = str(HOSTS.index(CURRENT_HOST))
+os.environ['LOCAL_RANK'] = str(0)
 
 
 class T5(pl.LightningModule):
@@ -609,6 +622,9 @@ def main():
         trainer = pl.Trainer(
             # logger=tb_logger,
             checkpoint_callback=checkpoint_callback,
+            gpus=int(NUM_GPU),
+            accelerator='ddp2',
+            num_nodes=len(HOSTS),
             **OmegaConf.to_container(cfg.trainer, resolve=True),
         )
         trainer.fit(model_t5)
