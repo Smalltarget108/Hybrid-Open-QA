@@ -1,20 +1,10 @@
 ARG REGION=us-east-1
 
-FROM 763104351884.dkr.ecr.$REGION.amazonaws.com/pytorch-training:1.6.0-gpu-py3
+# FROM 763104351884.dkr.ecr.$REGION.amazonaws.com/pytorch-training:1.6.0-gpu-py3
+FROM 763104351884.dkr.ecr.$REGION.amazonaws.com/pytorch-training:1.6.0-gpu-py36-cu110-ubuntu18.04
 
-# # Apex
-# WORKDIR /tmp/unique_for_apex
-# # uninstall Apex if present, twice to make absolutely sure :)
-# RUN pip uninstall -y apex || :
-# RUN pip uninstall -y apex || :
-# # SHA is something the user can touch to force recreation of this Docker layer,
-# # and therefore force cloning of the latest version of Apex
-# RUN SHA=ToUcHMe git clone https://github.com/NVIDIA/apex.git
-# WORKDIR /tmp/unique_for_apex/apex
-# RUN pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" .
-# WORKDIR /workspace
-
-# Add the transformer package. This package is very important for NLP research.
+# Add the dependencies.
+RUN pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudio===0.7.2 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install transformers==3.0.2
 RUN pip install pytorch-lightning==1.1.4
 RUN pip install omegaconf==2.0.5

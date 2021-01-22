@@ -87,26 +87,9 @@ class T5Processor(DataProcessor):
             src = []
             has_pos = 0
 
-            if passage_type in ['textual', 'hybrid']:
-                for pas in line["passages"][:cand_for_each_source]:
-                    # 10 passages
-                    src.append("question: " + line["question"].strip() + " </s> passage title: " + pas["article_title"] + " </s> passage content: " + pas["text"] + " </s>") # e.g. question: Tell me what the notes are for South Australia </s> passage title: Strictly Commercial </s> passage content: album \"ZAPPAtite\".  All songs written and performed ... </s>
-                    if isinstance(pas['judge'], dict):
-                        has_pos += int(pas['judge']['judge_contain_all'])
-                    else:
-                        has_pos += int(pas['judge'])
-
-            if passage_type in ['tabular', 'hybrid']:
-                for tab in line["tables"][:cand_for_each_source]:
-                    # 10 tables
-                    src.append("question: " + line["question"].strip() + " </s> table title: "   + "table_" + tab["uid"].split('-split')[0] + " </s> table content: "   + tab["text"] + " </s>") # e.g. question: Tell me what the notes are for South Australia </s> table title: From Nashville to Memphis: The Essential '60s Masters ; Disc Two ; Disc Tw </s> table content: ... </s>
-                    if isinstance(tab['judge'], dict):
-                        has_pos += int(tab['judge']['judge_contain_all'])
-                    else:
-                        has_pos += int(tab['judge'])
-
-            if passage_type == 'both':
-                score_key = 'es_score' if set_type == 'train' else 'rank_score'
+            if passage_type == 'both' and set_type != 'train':
+                # rank by bert score in val and test
+                score_key = 'rank_score'
                 both_sources = line["passages"][:2*cand_for_each_source] + line["tables"][:2*cand_for_each_source]
                 all_scores = np.array([x[score_key] for x in both_sources])
                 sorted_index = all_scores.argsort()[::-1][:2*cand_for_each_source]
@@ -126,6 +109,26 @@ class T5Processor(DataProcessor):
                         has_pos += int(pas['judge']['judge_contain_all'])
                     else:
                         has_pos += int(pas['judge'])
+
+            else:
+
+                if passage_type in ['textual', 'hybrid', 'both']:
+                    for pas in line["passages"][:cand_for_each_source]:
+                        # 10 passages
+                        src.append("question: " + line["question"].strip() + " </s> passage title: " + pas["article_title"] + " </s> passage content: " + pas["text"] + " </s>") # e.g. question: Tell me what the notes are for South Australia </s> passage title: Strictly Commercial </s> passage content: album \"ZAPPAtite\".  All songs written and performed ... </s>
+                        if isinstance(pas['judge'], dict):
+                            has_pos += int(pas['judge']['judge_contain_all'])
+                        else:
+                            has_pos += int(pas['judge'])
+
+                if passage_type in ['tabular', 'hybrid', 'both']:
+                    for tab in line["tables"][:cand_for_each_source]:
+                        # 10 tables
+                        src.append("question: " + line["question"].strip() + " </s> table title: "   + "table_" + tab["uid"].split('-split')[0] + " </s> table content: "   + tab["text"] + " </s>") # e.g. question: Tell me what the notes are for South Australia </s> table title: From Nashville to Memphis: The Essential '60s Masters ; Disc Two ; Disc Tw </s> table content: ... </s>
+                        if isinstance(tab['judge'], dict):
+                            has_pos += int(tab['judge']['judge_contain_all'])
+                        else:
+                            has_pos += int(tab['judge'])
 
             const = 2 if passage_type in ['hybrid', 'both'] else 1
             if len(src) != const * cand_for_each_source:

@@ -591,8 +591,8 @@ def main():
         monitor='avg_val_loss',
         filepath=os.path.join(checkpoint_dir, '{epoch}-{val_loss:.4f}'),
         mode='min',
-        save_last=True,
-        save_top_k=3,
+        save_last=False,
+        save_top_k=2,
     )
 
     model_t5 = T5(cfg)

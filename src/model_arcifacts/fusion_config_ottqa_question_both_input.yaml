@@ -11,7 +11,7 @@ data:
   output_dir: null
   question_type: ott-qa
   passage_type: both
-  num_beams: 1
+  num_beams: 3
   num_return_sequences: 1
 
 # model
@@ -22,14 +22,13 @@ model:
   cache_dir: /tmp/cache/
   use_fast: true
   checkpoint_dir: null
-  # model_checkpoint: /home/ec2-user/efs/ck/zeshel/pretrain/t5-base/epoch=0-val_loss=1.6496.ckpt
   model_checkpoint: null
 
 # optim
 optim:
-  train_batch_size: 8
-  dev_batch_size: 16
-  test_batch_size: 16
+  train_batch_size: 16
+  dev_batch_size: 32
+  test_batch_size: 32
   warmup_steps: 0.1
   weight_decay: 0.01
   learning_rate: 1e-4
@@ -43,6 +42,6 @@ trainer:
   distributed_backend: dp
   val_check_interval: 1000
   max_steps: 10000
-  accumulate_grad_batches: 4
+  accumulate_grad_batches: 2
   gradient_clip_val: 1.0
   precision: 16
