@@ -16,6 +16,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import loggers, seed_everything
 import pdb
 import json
+from pytorch_lightning.overrides.data_parallel import LightningDistributedDataParallel
+from pytorch_lightning.plugins.ddp_plugin import DDPPlugin
 
 from utils_fusion_in_decoder import generate_dataloader
 
@@ -45,6 +47,14 @@ os.environ['MASTER_PORT'] = str(6105)
 os.environ['WORLD_SIZE'] = str(len(HOSTS))
 os.environ['NODE_RANK'] = str(HOSTS.index(CURRENT_HOST))
 os.environ['LOCAL_RANK'] = str(0)
+
+class MyDDP(DDPPlugin):
+
+    def configure_ddp(self, model, device_ids):
+        model = LightningDistributedDataParallel(model, device_ids, find_unused_parameters=True)
+        return model
+
+my_ddp = MyDDP()
 
 
 class T5(pl.LightningModule):
@@ -604,7 +614,7 @@ def main():
         monitor='avg_val_loss',
         filepath=os.path.join(checkpoint_dir, '{epoch}-{val_loss:.4f}'),
         mode='min',
-        save_last=True,
+        save_last=False,
         save_top_k=3,
     )
 
@@ -625,6 +635,7 @@ def main():
             gpus=int(NUM_GPU),
             accelerator='ddp2',
             num_nodes=len(HOSTS),
+            plugins = [my_ddp],
             **OmegaConf.to_container(cfg.trainer, resolve=True),
         )
         trainer.fit(model_t5)
