@@ -9,7 +9,7 @@ data:
   max_generation_length: 64
   overwrite_cache: false
   output_dir: null
-  question_type: ott-qa
+  question_type: wikisql_question
   passage_type: both
   num_beams: 1
   num_return_sequences: 1

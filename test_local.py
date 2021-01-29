@@ -42,10 +42,9 @@ bushiyan = [
 ]
 
 table_with_sql = [
-    # ('', '_squad_wikisql_question_table_input_sql'),
+    ('01262254-squad-wikisql-question-table-input-sql', '_squad_wikisql_question_table_input_sql'),
     # ('', '_nq_wikisql_question_table_input_sql'),
     # ('', '_ott_wikisql_question_table_input_sql'),
-    ('', '_wikisql_question_both_input'),
 ]
 
 # both_with_sql = [
@@ -53,36 +52,36 @@ table_with_sql = [
 #     ('', '_ottqa_wikisql_question_both_input_sql'),
 # ]
 
-for _, config_name in table_with_sql:
+for ckpt_path, config_name in table_with_sql:
     time.sleep(3)
     print(config_name)
     estimator = PyTorch(debugger_hook_config=False, # IMPORTANT: sagemaker debugger is CANCER!!!!!
-                        entry_point='run_fusion_in_decoder.py',
+                        entry_point='run_fid_inference_sm.py',
                         source_dir='/home/ec2-user/projects/Hybrid-Open-QA/src/',
                         role=role,
                         train_instance_count=1,
-                        train_instance_type='ml.p4d.24xlarge',
-                        # train_instance_type='ml.p3dn.24xlarge',
-                        # image_name='630054792439.dkr.ecr.us-east-1.amazonaws.com/t5-training',
-                        # image_name='630054792439.dkr.ecr.us-east-1.amazonaws.com/fid-py3',
+                        train_instance_type='local_gpu',
                         image_uri='630054792439.dkr.ecr.us-east-1.amazonaws.com/pytorch-1.6.0-cuda11',
                         # image_uri='630054792439.dkr.ecr.us-east-1.amazonaws.com/pytorch-1.7.1', # cuda 11.0
-                        output_path='s3://hanboli-research/hybridQA/sm_output',
-                        code_location='s3://hanboli-research/hybridQA/sm_output',
+                        output_path='file:///home/ec2-user/efs/sagemaker-output/hybridQA',
                         # framework_version='1.6.0',
                         # py_version='py3',
-                        train_max_run=2 * 24 * 60 * 60,
-                        train_volume_size=500,
-                        hyperparameters={'config': config_name}
+                        hyperparameters={
+                            'config': config_name,
+                            'num_beams': 3,
+                            'num_return_sequences': 3,
+                            'test_batch_size': 32,
+                            }
                         )
 
     input_dict = {
-        'train': 's3://hanboli-research/hybridQA/FID',
+        'train': 'file:///home/ec2-user/efs/hybridQA/FID-inference',
+        'test': 'file:///home/ec2-user/efs/mix-squa-wiki/sm_output/' + ckpt_path + '/output',
     }
 
-    print("start training...")
+    print("start testing...")
     localtime = datetime.now(timezone('America/Los_Angeles'))
-    fmt = '%m%d%H%M'
+    fmt = '%m%d%H%M%S'
     st = localtime.strftime(fmt)
-    job_name = (st + config_name).replace('_', '-') + '-final'
+    job_name = (st + config_name).replace('_', '-')
     estimator.fit(input_dict, job_name=job_name, wait=True)

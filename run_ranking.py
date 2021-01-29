@@ -313,7 +313,7 @@ def main():
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--do_test', action='store_true')
     parser.add_argument('--data_dir', default='/home/ec2-user/efs/ott-qa/reranking/', type=str)
-    parser.add_argument('--num_cand', default=50, type=int)
+    parser.add_argument('--num_cand', default=64, type=int)
     parser.add_argument('--question_type', default='ott-qa', choices=['opensquad', 'wikisql_denotation', 'NQ-open', 'ott-qa'])
 
     parser.add_argument('--task_type', default='AutoModelForSequenceClassification', type=str)
@@ -331,7 +331,7 @@ def main():
     parser.add_argument('--gradient_accumulation_steps', default=2, type=int)
     parser.add_argument('--num_train_epochs', default=3, type=int)
     parser.add_argument('--num_train_steps', default=10000, type=int)
-    parser.add_argument('--max_length', default=100, type=int)
+    parser.add_argument('--max_length', default=150, type=int)
 
     # add all the available options to the trainer
     parser = pl.Trainer.add_argparse_args(parser)

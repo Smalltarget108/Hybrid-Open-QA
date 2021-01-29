@@ -50,7 +50,7 @@ class RerankingProcessor(DataProcessor):
 
     def get_data_examples(self, data_dir, num_cand, mode, question_type='wikisql_denotation'):
         """See base class."""
-        return self._create_examples(self._parse_data(self._read_jsonl(data_dir, f"{question_type}.{mode}.es_retrieved.{num_cand}_cands.both_index.jsonl"), num_cand), f"{mode}", num_cand)
+        return self._create_examples(self._parse_data(self._read_jsonl(data_dir, f"reranking/{question_type}.{mode}.es_retrieved.{num_cand}_cands.both_index.jsonl"), num_cand), f"{mode}", num_cand)
 
     def get_inference_examples(self, data_dir, mode, question_type='wikisql_denotation'):
         return self._create_inference_examples(self._parse_inference_data(self._read_jsonl(data_dir, f"{question_type}.dev.es_retrieved.processed.jsonl")), f"{mode}")

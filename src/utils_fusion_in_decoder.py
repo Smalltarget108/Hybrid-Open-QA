@@ -32,7 +32,14 @@ class InputFeatures:
     labels: Optional[List[int]] = None
 
 
-cand_for_each_source = 50
+# cand_for_each_source = 50
+
+# prefix_to_folder = {
+#     'wikisql_denotation': 'regular',
+#     'opensquad': 'regular',
+#     'NQ-open': 'open-nq',
+#     'ott-qa': 'ott-qa',
+# }
 
 
 class T5Processor(DataProcessor):
@@ -42,7 +49,7 @@ class T5Processor(DataProcessor):
             data = [x for x in f.iter()]
         return data
 
-    def get_data_examples(self, data_dir, mode, question_type, passage_type):
+    def get_data_examples(self, data_dir, mode, question_type, passage_type, enable_sql_supervision, cand_for_each_source):
         """See base class."""
         if question_type == 'wikisql_question':
             prefix = ['wikisql_denotation']
@@ -56,6 +63,10 @@ class T5Processor(DataProcessor):
             prefix = ['NQ-open', 'wikisql_denotation']
         elif question_type == 'ott-qa':
             prefix = ['ott-qa']
+        elif question_type == 'ottqa_wikisql':
+            prefix = ['ott-qa', 'wikisql_denotation']
+        elif question_type == 'all':
+            prefix = ['ott-qa', 'opensquad', 'NQ-open', 'wikisql_denotation']
         else:
             raise NotImplementedError()
 
@@ -63,31 +74,33 @@ class T5Processor(DataProcessor):
         if mode == 'train':
             for q_type in prefix:
                 if q_type == 'wikisql_denotation':
-                    data.extend(self._read_jsonl(os.path.join(data_dir, f"{q_type}.{mode}.es_retrieved.true_sql.jsonl")))
+                    data.extend(self._read_jsonl(os.path.join(data_dir, f"{q_type}.train.es_retrieved.true_sql.jsonl")))
                 else:
-                    data.extend(self._read_jsonl(os.path.join(data_dir, f"{q_type}.{mode}.es_retrieved.jsonl")))
+                    data.extend(self._read_jsonl(os.path.join(data_dir, f"{q_type}.train.es_retrieved.jsonl")))
             random.shuffle(data)
-            return self._create_examples(data, mode, passage_type)
+            return self._create_examples(data, mode, passage_type, enable_sql_supervision, cand_for_each_source)
         else:
             for q_type in prefix:
                 if q_type == 'wikisql_denotation':
-                    data.extend(self._read_jsonl(os.path.join(data_dir, "reranking/scores", f"{q_type}.dev.es_retrieved.scores.sorted.true_sql.jsonl")))
+                    data.extend(self._read_jsonl(os.path.join(data_dir, f"scores", f"{q_type}.dev.es_retrieved.scores.sorted.true_sql.jsonl")))
                 else:
-                    data.extend(self._read_jsonl(os.path.join(data_dir, "reranking/scores", f"{q_type}.dev.es_retrieved.processed.scores.sorted.jsonl")))
-            return self._create_examples(data, mode, passage_type)
+                    data.extend(self._read_jsonl(os.path.join(data_dir, f"scores", f"{q_type}.dev.es_retrieved.processed.scores.sorted.jsonl")))
+                    # data.extend(self._read_jsonl(os.path.join(data_dir, "scores", f"{q_type}.dev.es_retrieved.scores.sorted.jsonl")))
+            return self._create_examples(data, mode, passage_type, enable_sql_supervision, cand_for_each_source)
 
-    def _create_examples(self, lines, set_type, passage_type):
+    def _create_examples(self, lines, set_type, passage_type, enable_sql_supervision, cand_for_each_source):
         """Creates examples for the training and dev sets."""
 
         examples = []
         total_answerable = 0
 
         for (i, line) in tqdm(enumerate(lines), total=len(lines)):
-            guid = "%s-%s" % (set_type, i)
+            guid = "%s-%s-%s" % (set_type, line['qid'], str(i))
             src = []
             has_pos = 0
 
             if passage_type == 'both' and set_type != 'train':
+
                 # rank by bert score in val and test
                 score_key = 'rank_score'
                 both_sources = line["passages"][:2*cand_for_each_source] + line["tables"][:2*cand_for_each_source]
@@ -133,23 +146,29 @@ class T5Processor(DataProcessor):
             const = 2 if passage_type in ['hybrid', 'both'] else 1
             if len(src) != const * cand_for_each_source:
                 logger.info(line)
-                continue
+                src = src + [""] * (const * cand_for_each_source - len(src))
 
             if has_pos == 0:
-                if set_type != 'test':
+                if set_type == 'train':
                     continue
             else:
                 total_answerable += 1
 
-            if 'true_sql' in line:
+            if enable_sql_supervision and 'true_sql' in line:
                 tgt = "sql: " + line["true_sql"] + " </s>" # e.g. sql: SELECT Position FROM table_1-10015132-11 WHERE School/Club Team = \"Butler CC (KS)\" </s>
                 examples.append(InputExamples(guid=guid, source=src, target=tgt))
+                if i % 1000 == 0:
+                    logger.info(src[0] + " " + tgt)
             if 'denotation' in line:
                 tgt = "answer: " + str(line["denotation"][0]) + " </s>"
                 examples.append(InputExamples(guid=guid, source=src, target=tgt))
+                if i % 1000 == 0:
+                    logger.info(src[0] + " " + tgt)
             if 'answers' in line:
                 tgt = "answer: " + str(line["answers"][0]) + " </s>" # e.g. answer: no slogan on current series </s>
                 examples.append(InputExamples(guid=guid, source=src, target=tgt))
+                if i % 1000 == 0:
+                    logger.info(src[0] + " " + tgt + "\n")
 
         logger.info(f"Total answerable in {set_type} split is {total_answerable / len(lines)}")
 
@@ -190,7 +209,7 @@ def convert_examples_to_features(
                 # return_tensors="pt"
             )
 
-            if int(example.guid.split('-')[1]) < 10:
+            if int(example.guid.split('-')[-1]) < 10:
                 logger.info("*** Example ***")
                 logger.info("guid: %s" % (example.guid))
                 logger.info("input_ids: %s" % " ".join([str(x) for x in inputs["input_ids"][0]]))
@@ -213,7 +232,7 @@ def convert_examples_to_features(
 
         return output
 
-    n_cpus= max(1, int(mp.cpu_count()/2))
+    n_cpus= max(1, int(mp.cpu_count()/1.1))
     logger.info(f"Using {n_cpus} cpus")
     split_len = 100
     batched_examples = []
@@ -246,6 +265,8 @@ class T5Dataset(Dataset):
         overwrite_cache=False,
         question_type='wikisql_question',
         passage_type='textual',
+        enable_sql_supervision=False,
+        cand_for_each_source=50,
     ):
         # Load data features from cache or dataset file
         cache_dir = os.path.join(data_dir, "cache")
@@ -260,7 +281,7 @@ class T5Dataset(Dataset):
         else:
             logger.info(f"Creating features from dataset file at {data_dir}")
             processor = T5Processor()
-            examples = processor.get_data_examples(data_dir, mode, question_type, passage_type)
+            examples = processor.get_data_examples(data_dir, mode, question_type, passage_type, enable_sql_supervision, cand_for_each_source)
 
             self.features = convert_examples_to_features(
                 examples,
@@ -288,6 +309,8 @@ def generate_dataloader(
     batch_size: int=8,
     question_type: str='wikisql_question',
     passage_type: str='textual',
+    enable_sql_supervision: bool=False,
+    cand_for_each_source: int=50,
 ) -> DataLoader:
 
     def collate_fn(features):
@@ -303,10 +326,17 @@ def generate_dataloader(
                          overwrite_cache=overwrite_cache,
                          mode=mode,
                          question_type=question_type,
-                         passage_type=passage_type)
+                         passage_type=passage_type,
+                         enable_sql_supervision=enable_sql_supervision,
+                         cand_for_each_source=cand_for_each_source,
+                        )
+
+    n_cpus= max(1, int(mp.cpu_count()/2))
+
     dataloader = DataLoader(dataset,
                             batch_size=batch_size,
                             collate_fn=collate_fn,
+                            num_workers=n_cpus,
                             shuffle=True if mode=="train" else False)
 
     return dataloader

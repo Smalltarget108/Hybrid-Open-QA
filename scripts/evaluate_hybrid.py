@@ -15,9 +15,11 @@ def _determine_judge(doc, judge_key):
         return doc['judge'][judge_key]
 
 
-def sort_scores(data, sort_on='both'):
+def sort_scores(data, sort_on='both', rank_ulimit=200):
     # sort_index: ['both', 'passages', 'tables']
     for line in tqdm(data, total=len(data), desc='sorting'):
+        line['passages'] = line['passages'][:rank_ulimit]
+        line['tables'] = line['tables'][:rank_ulimit]
         rank_scores = []
         if sort_on == 'both':
             line['both'] = line['passages'] + line['tables']

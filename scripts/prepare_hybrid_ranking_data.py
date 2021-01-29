@@ -81,14 +81,14 @@ if __name__ == '__main__':
 
     argp = argparse.ArgumentParser()
     argp.add_argument('--data_dir', default='/home/ec2-user/efs/hybridQA/NQ/hystruct_es_retrieval-nqopen-wikitext-wikitable-20200929T195611-Lug', type=str)
-    argp.add_argument('--num_cand', default=50)
+    argp.add_argument('--num_cand', default=64)
     argp.add_argument('--index', default='both')
     argp.add_argument('--question_type', default='NQ-open', choices=['opensquad', 'wikisql_denotation', 'NQ-open', 'ott-qa'])
     args = argp.parse_args()
 
-    if args.question_type in ['opensquad', 'NQ-open', 'ott-qa']:
+    if args.question_type.lower() in ['opensquad', 'nq-open', 'ott-qa']:
         judge_key = None
-    elif args.question_type == 'wikisql_denotation':
+    elif args.question_type.lower() == 'wikisql_denotation':
         judge_key = "judge_contain_some"
     else:
         raise NotImplementedError()
