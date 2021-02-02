@@ -312,7 +312,7 @@ def main():
     parser.add_argument('--overwrite', default=None, nargs='*')
     parser.add_argument('--do_train', action='store_true')
     parser.add_argument('--do_test', action='store_true')
-    parser.add_argument('--data_dir', default='/home/ec2-user/efs/ott-qa/reranking/', type=str)
+    parser.add_argument('--data_dir', default='/home/ec2-user/efs/ott-qa/', type=str)
     parser.add_argument('--num_cand', default=64, type=int)
     parser.add_argument('--question_type', default='ott-qa', choices=['opensquad', 'wikisql_denotation', 'NQ-open', 'ott-qa'])
 

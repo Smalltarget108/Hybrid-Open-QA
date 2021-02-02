@@ -87,6 +87,8 @@ def main():
         batch_size = cfg.optim.test_batch_size,
         question_type = cfg.data.question_type,
         passage_type = cfg.data.passage_type,
+        enable_sql_supervision = cfg.data.enable_sql_supervision,
+        cand_for_each_source = cfg.data.cand_for_each_source,
     )
 
     torch.cuda.empty_cache()

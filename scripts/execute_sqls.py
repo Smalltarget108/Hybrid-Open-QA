@@ -126,10 +126,32 @@ def parse_sql_str(sql):
 
 
 def execute_line(line):
-    if "sql" not in line['gen']:
+    if "sql" not in line['gen_top1']:
         return line
 
-    success, ep = parse_sql_str(line['gen'].replace("sql:", "").lstrip())
+    success, ep = parse_sql_str(line['gen_top1'].replace("sql:", "").lstrip())
+    if success:
+        if ep['split'].endswith('.sqlite'):
+            engine = DBEngine(f"/home/ec2-user/efs/hybridQA/wikitables_sqlite/{ep['split']}")
+        else:
+            engine = DBEngine(f"/home/ec2-user/efs/nel_data/WikiSQL/data/{ep['split']}")
+        try:
+            qp = Query.from_dict(ep['query'], ordered=False)
+            pred_str_list = engine.execute_query(ep['table_id'], qp, lower=True)
+        except Exception as e:
+            pred_str_list = [repr(e)]
+    else:
+        pred_str_list = [""]
+
+    line['success'] = success
+    line['exe_results'] = pred_str_list
+    line['parsed_sql'] = ep
+
+    return line
+
+
+def execute_line_gth(line):
+    success, ep = parse_sql_str(line['true_sql'].lstrip())
     if success:
         if ep['split'].endswith('.sqlite'):
             engine = DBEngine(f"/home/ec2-user/efs/hybridQA/wikitables_sqlite/{ep['split']}")

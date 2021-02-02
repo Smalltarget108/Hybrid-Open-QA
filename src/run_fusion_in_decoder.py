@@ -884,6 +884,8 @@ def main():
             batch_size = cfg.optim.train_batch_size,
             question_type = cfg.data.question_type,
             passage_type = cfg.data.passage_type,
+            enable_sql_supervision = cfg.data.enable_sql_supervision,
+            cand_for_each_source = cfg.data.cand_for_each_source,
         )
 
         dev_dataloader = generate_dataloader(
@@ -896,6 +898,8 @@ def main():
             batch_size = cfg.optim.dev_batch_size,
             question_type = cfg.data.question_type,
             passage_type = cfg.data.passage_type,
+            enable_sql_supervision = cfg.data.enable_sql_supervision,
+            cand_for_each_source = cfg.data.cand_for_each_source,
         )
 
         logger.info("Training starts")
@@ -920,6 +924,8 @@ def main():
             batch_size = cfg.optim.test_batch_size,
             question_type = cfg.data.question_type,
             passage_type = cfg.data.passage_type,
+            enable_sql_supervision = cfg.data.enable_sql_supervision,
+            cand_for_each_source = cfg.data.cand_for_each_source,
         )
 
         logger.info("Evaluation starts")

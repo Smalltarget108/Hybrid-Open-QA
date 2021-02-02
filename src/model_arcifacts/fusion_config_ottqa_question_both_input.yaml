@@ -9,11 +9,12 @@ data:
   max_generation_length: 64
   overwrite_cache: false
   output_dir: null
-  question_type: ott-qa
-  passage_type: both
+  question_type: wikisql_question
+  passage_type: table
   num_beams: 1
   num_return_sequences: 1
   enable_sql_supervision: false
+  cand_for_each_source: 50
 
 # model
 model:

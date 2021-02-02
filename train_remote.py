@@ -53,7 +53,14 @@ table_with_sql = [
 #     ('', '_ottqa_wikisql_question_both_input_sql'),
 # ]
 
-for _, config_name in table_with_sql:
+nq_experiments = [
+    # ('', '_nq_question_both_input'),
+    # ('', '_nq_question_text_input'),
+    ('', '_nq_wikisql_question_both_input_sql'),
+    ('', '_nq_wikisql_question_table_input_sql'),
+]
+
+for _, config_name in nq_experiments:
     time.sleep(3)
     print(config_name)
     estimator = PyTorch(debugger_hook_config=False, # IMPORTANT: sagemaker debugger is CANCER!!!!!

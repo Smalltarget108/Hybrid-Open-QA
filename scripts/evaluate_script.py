@@ -82,8 +82,9 @@ def get_raw_scores(examples, reference):
     # reference = reference[::-1]
     for idx, example in tqdm(enumerate(examples), total=len(examples)):
 
-        if idx % 3 != 0 or 'answer' not in example['tgt']:
-            continue
+        # if idx % 3 != 0 or 'answer' not in example['tgt']:
+        #     continue
+
         eg_tgt = remove_special_tokens(replace_keys(example['tgt'], 'answer'))
         try:
             while eg_tgt not in [remove_special_tokens(tokenizer.decode(tokenizer.encode(str(x)))) for x in reference[i]['answers']]:
@@ -97,9 +98,9 @@ def get_raw_scores(examples, reference):
             print(idx, i)
             flag = False
 
-        gold_answers = [str(x).lstrip() for x in reference[i]['answers']]
+        gold_answers = [str(x).lstrip() for x in reference[i]['denotation']]
         qas_id = reference[i]['qid']
-        prediction = replace_keys(example['gen'], "answer")
+        prediction = replace_keys(example['gen_text'], "answer")
 
         exact_scores[qas_id] = max(compute_exact(a, prediction) for a in gold_answers)
         f1_scores[qas_id] = max(compute_f1(a, prediction) for a in gold_answers)

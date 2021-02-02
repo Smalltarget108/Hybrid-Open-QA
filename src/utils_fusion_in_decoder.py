@@ -85,6 +85,7 @@ class T5Processor(DataProcessor):
                     data.extend(self._read_jsonl(os.path.join(data_dir, f"scores", f"{q_type}.dev.es_retrieved.scores.sorted.true_sql.jsonl")))
                 else:
                     data.extend(self._read_jsonl(os.path.join(data_dir, f"scores", f"{q_type}.dev.es_retrieved.processed.scores.sorted.jsonl")))
+                    # data.extend(self._read_jsonl(os.path.join(data_dir, "nq.dev.wikigq_siamese_512.wiki2016.wikitable.jsonl")))
                     # data.extend(self._read_jsonl(os.path.join(data_dir, "scores", f"{q_type}.dev.es_retrieved.scores.sorted.jsonl")))
             return self._create_examples(data, mode, passage_type, enable_sql_supervision, cand_for_each_source)
 
@@ -103,6 +104,7 @@ class T5Processor(DataProcessor):
 
                 # rank by bert score in val and test
                 score_key = 'rank_score'
+                # score_key = "nr_score"
                 both_sources = line["passages"][:2*cand_for_each_source] + line["tables"][:2*cand_for_each_source]
                 all_scores = np.array([x[score_key] for x in both_sources])
                 sorted_index = all_scores.argsort()[::-1][:2*cand_for_each_source]
@@ -148,10 +150,7 @@ class T5Processor(DataProcessor):
                 logger.info(line)
                 src = src + [""] * (const * cand_for_each_source - len(src))
 
-            if has_pos == 0:
-                if set_type == 'train':
-                    continue
-            else:
+            if has_pos > 0:
                 total_answerable += 1
 
             if enable_sql_supervision and 'true_sql' in line:
@@ -305,12 +304,12 @@ def generate_dataloader(
     max_source_length: int,
     max_target_length: int,
     mode: str,
+    enable_sql_supervision: bool,
+    cand_for_each_source: int,
     overwrite_cache=False,
     batch_size: int=8,
     question_type: str='wikisql_question',
     passage_type: str='textual',
-    enable_sql_supervision: bool=False,
-    cand_for_each_source: int=50,
 ) -> DataLoader:
 
     def collate_fn(features):

@@ -10,10 +10,11 @@ data:
   overwrite_cache: false
   output_dir: null
   question_type: ott-qa
-  passage_type: textual
+  passage_type: both
   num_beams: 1
   num_return_sequences: 1
   enable_sql_supervision: false
+  cand_for_each_source: 50
 
 # model
 model:
@@ -28,8 +29,8 @@ model:
 # optim
 optim:
   train_batch_size: 16
-  dev_batch_size: 32
-  test_batch_size: 32
+  dev_batch_size: 64
+  test_batch_size: 64
   warmup_steps: 0.1
   weight_decay: 0.01
   learning_rate: 1e-4
